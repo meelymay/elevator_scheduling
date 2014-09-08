@@ -62,7 +62,7 @@ class Elevator:
             # all the way forward and partly back
             return abs(self.forward_max() - self.position) + abs(self.forward_max() - floor)
 
-    def update(self):
+    def step(self):
         '''advance the elevator in the correct direction, remove stops from plan'''
         self.position += self.direction
         if self.position in self.forward_stops:
@@ -88,9 +88,9 @@ class ElevatorSystem:
         for e in self.elevators:
             print e
 
-    def update(self):
+    def step(self):
         for elevator in self.elevators:
-            elevator.update()
+            elevator.step()
 
     def pickup(self, floor, direction=0, elevator=None):
         if elevator == None:
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     elevator_system = ElevatorSystem(6)
     request = None
     while request != "EXIT":
-        elevator_system.update()
+        elevator_system.step()
         try:
             request = raw_input("Request a floor: ")
             fields = request.split()
