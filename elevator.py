@@ -1,6 +1,69 @@
 import sys
 
-# TODO these are the worst
+class Elevator:
+    def __init__(self, id):
+        self.id = id
+        self.forward_stops = set([])
+        self.destination = 0
+        self.backward_stops = set([])
+        self.second_destination = 0
+        self.last_stops = set([])
+        self.position = 0
+        self.direction = 0
+
+    def pickup(self, floor, direction):
+        if not self.forward_stops:
+            self.forward_stops.add(floor)
+            distance = floor - self.position
+            self.direction = distance/abs(distance)
+            return
+        if direction in [self.direction, 0]:
+            if (floor > self.position and self.direction > 0) or (floor < self.position and self.direction < 0):
+                self.forward_stops.add(floor)
+            elif direction != 0:
+                self.last_stops.add(floor)
+            else:
+                # stop at this floor as soon as we reach it
+                self.backward_stops.add(floor)
+        else:
+            self.backward_stops.add(floor)
+
+    def forward_max(self):
+        if self.direction >= 0:
+            return max(self.forward_stops)
+        else:
+            return min(self.forward_stops)
+
+    def backward_max(self):
+        if self.direction < 0:
+            return max(self.forward_stops)
+        else:
+            return min(self.forward_stops)
+
+    def insert_cost(self, floor, direction):
+        if not self.forward_stops:
+            return 0
+        if direction in[self.direction, 0]:
+            if floor in range(min(self.forward_stops), max(self.forward_stops)):
+                return abs(floor - self.position)
+            else:
+                return abs(self.forward_max() - self.position) + abs(self.forward_max() - floor)
+        else:
+            return abs(self.forward_max() - self.position) + abs(self.forward_max() - self.backward_max()) + abs(floor - self.backward_max())
+
+    def update(self):
+        self.position += self.direction
+        if self.position in self.forward_stops:
+            self.forward_stops.remove(self.position)
+        if not self.forward_stops:
+            self.direction = -self.direction
+            self.forward_stops = self.backward_stops
+            self.backward_stops = self.last_stops
+            self.last_stops = set([])
+
+    def __str__(self):
+        return "ID: %s\tFloor: %s\tPlan: f%s,b%s,l%s" % (self.id, self.position, self.forward_stops, self.backward_stops, self.last_stops)
+
 def insert_sorted(plan, floor, start, end):
     print "should be inserting",floor,"between",start,end
     if abs(end - start) < 2:
@@ -51,7 +114,7 @@ def insert_sorted(plan, floor, start, end):
                 # we're sorting down
                 insert_sorted(plan, floor, mid, end)
 
-class Elevator:
+class ElevatorOld:
 
     def __init__(self, id):
         self.id = id
@@ -89,7 +152,7 @@ class Elevator:
                     insert_sorted(self.plan, floor, 0, self.destination_index())
                 else:
                     print "\t\tfloor NOT in current direction"
-                    insert_sorted(self.plan, floor, self.destination_index(), self.second_destination_index())
+                    insert_sorted(self.plan, floor, self.second_destination_index(), len(self.plan)-1)
             else:
                 print "\tcalled in diff direction"
                 if distance/abs(distance) == self.direction():
@@ -105,13 +168,17 @@ class Elevator:
     def destination_index(self):
         # TODO could keep this info more efficiently
         if self.plan:
+            print "destination ind",max(range(len(self.plan)), key=lambda x: self.plan[x]*self.direction())
             return max(range(len(self.plan)), key=lambda x: self.plan[x]*self.direction())
         else:
             return 0
 
     def second_destination_index(self):
         if self.plan:
-            return max(range(self.destination_index(), len(self.plan)), key=lambda x: -self.plan[x]*self.direction())
+            print "self.plan",self.plan,"len",len(self.plan)
+            pot_range = range(self.destination_index(), len(self.plan))
+            print "potential range for second dest", pot_range
+            return max(pot_range, key=lambda x: -self.plan[x]*self.direction())
         else:
             return 0
 
@@ -134,7 +201,7 @@ class ElevatorSystem:
             elevator.update()
 
     def pickup(self, floor, direction=0):
-        elevator = min(self.elevators, key=lambda x: x.cost(floor, direction))
+        elevator = min(self.elevators, key=lambda x: x.insert_cost(floor, direction))
         elevator.pickup(floor, direction)
 
 if __name__ == "__main__":
