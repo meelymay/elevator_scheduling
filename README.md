@@ -3,6 +3,8 @@ Elevator Scheduling
 
 My ElevatorSystem consists of a list of elevators, each keeping track of their own state.
 
+You can run this project simply with $ python elevator.py
+
 Interface
 ====
 The elevator system interface has three methods: status, step, and pickup.
